@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atelier tabac – support d’animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F8F7; --surface:#FFFFFF; --ink:#16323A; --muted:#4D6970; --line:#CFE0DD;
+  --air:#0F6E78; --air-soft:#DCEFEC; --sun:#F4B942; --sun-soft:#FDF1D6;
+  --vrai:#2C8C5A; --vrai-soft:#DDF2E6; --faux:#D0513A; --faux-soft:#FBE2DC;
+  --on-color:#FFFFFF;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1D21; --surface:#17292E; --ink:#E6F1EF; --muted:#A3BCBF; --line:#2B4449;
+    --air:#4FC1C9; --air-soft:#1C3A3F; --sun:#F4B942; --sun-soft:#3A3120;
+    --vrai:#5CC28B; --vrai-soft:#1D3A2A; --faux:#F07F68; --faux-soft:#40231D;
+    --on-color:#0F1D21; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1D21; --surface:#17292E; --ink:#E6F1EF; --muted:#A3BCBF; --line:#2B4449;
+  --air:#4FC1C9; --air-soft:#1C3A3F; --sun:#F4B942; --sun-soft:#3A3120;
+  --vrai:#5CC28B; --vrai-soft:#1D3A2A; --faux:#F07F68; --faux-soft:#40231D;
+  --on-color:#0F1D21; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 80px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",Verdana,"Segoe UI",sans-serif;font-size:1.0625rem;line-height:1.55}
+h1,h2,h3{font-family:"Bricolage Grotesque","Trebuchet MS",sans-serif;line-height:1.15;margin:0 0 .5em}
+h1{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800}
+h2{font-size:clamp(1.35rem,3vw,1.8rem);font-weight:700}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0 0 .8em}
+a{color:var(--air)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between}
+.brand{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.1rem;display:flex;align-items:center;gap:.5rem}
+.brand .leaf{width:28px;height:28px;border-radius:50%;background:var(--air);display:grid;place-items:center;color:var(--on-color);font-size:.95rem}
+nav.tabs{display:flex;gap:.4rem;flex-wrap:wrap}
+nav.tabs a{text-decoration:none;color:var(--ink);padding:.55rem .9rem;border-radius:999px;border:2px solid var(--line);font-weight:700;font-size:.98rem;background:var(--surface)}
+nav.tabs a[aria-current="page"]{background:var(--air);border-color:var(--air);color:var(--on-color)}
+.chrono{display:flex;align-items:center;gap:.4rem}
+.chrono output{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:1.15rem;min-width:4.2ch;text-align:right}
+.btn{border:2px solid var(--air);background:var(--surface);color:var(--air);border-radius:12px;padding:.55rem 1rem;font-weight:700}
+.btn.solid{background:var(--air);color:var(--on-color)}
+.btn.sun{background:var(--sun);border-color:var(--sun);color:#2A2108}
+.btn.small{padding:.35rem .7rem;font-size:.92rem}
+
+main{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 4rem}
+.view{display:none}
+.view.active{display:block}
+
+/* Hero du déroulé */
+.hero{display:grid;grid-template-columns:1fr auto;gap:1.5rem;align-items:end;margin-bottom:1.5rem}
+.hero p{color:var(--muted);max-width:62ch}
+.objectifs{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem}
+.objectifs span{background:var(--air-soft);border-radius:8px;padding:.35rem .7rem;font-weight:700;font-size:.95rem}
+.ring{width:150px;height:150px}
+.ring text{font-family:"Bricolage Grotesque",sans-serif;fill:var(--ink)}
+
+.prep{background:var(--sun-soft);border-radius:16px;padding:1.1rem 1.3rem;margin-bottom:2rem}
+.prep ul{margin:.3rem 0 0;padding-left:1.2rem;columns:2;column-gap:2rem}
+.prep li{break-inside:avoid;margin-bottom:.3rem}
+
+/* Timeline */
+.timeline{position:relative;padding-left:0;list-style:none;margin:0}
+.seq{display:grid;grid-template-columns:110px 1fr;gap:1.2rem;padding:1.2rem 0;border-top:1px solid var(--line)}
+.seq.now{background:linear-gradient(90deg,var(--sun-soft),transparent 70%);border-radius:12px}
+.seq .when{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.25rem;color:var(--air);padding-left:.4rem}
+.seq .when small{display:block;font-size:.85rem;font-weight:500;color:var(--muted)}
+.seq .body{max-width:78ch}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.6rem 0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.8rem 1rem}
+.box h4{margin:0 0 .35rem;font-size:.95rem;color:var(--air)}
+.box ul{margin:0;padding-left:1.1rem}
+.box li{margin-bottom:.25rem}
+.say{border-left:4px solid var(--air);background:var(--air-soft);padding:.6rem .9rem;border-radius:0 10px 10px 0;margin:.6rem 0;font-style:italic}
+.tip{font-size:.95rem;color:var(--muted)}
+.launch{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem}
+
+/* Jeux */
+.game-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1rem 0 2rem}
+.game-pick a{display:block;text-decoration:none;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:1rem}
+.game-pick a[aria-current="true"]{border-color:var(--air);background:var(--air-soft)}
+.game-pick strong{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:1.15rem}
+.game-pick span{color:var(--muted);font-size:.95rem}
+
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:clamp(1rem,3vw,2.5rem);position:relative}
+.stage-bar{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dots i{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.dots i.done{background:var(--air)}
+.dots i.cur{background:var(--sun)}
+.question{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:clamp(1.5rem,3.6vw,2.6rem);line-height:1.2;margin:1rem 0 1.5rem;max-width:30ch}
+.answers{display:grid;gap:.8rem}
+.answers.vf{grid-template-columns:1fr 1fr}
+.ans{border:3px solid var(--line);background:var(--surface);color:var(--ink);border-radius:16px;padding:1rem 1.2rem;font-size:clamp(1.05rem,2vw,1.4rem);font-weight:700;text-align:left}
+.answers.vf .ans{text-align:center;font-family:"Bricolage Grotesque",sans-serif;font-size:clamp(1.6rem,4vw,2.8rem);padding:1.4rem}
+.answers.vf .ans.v{border-color:var(--vrai);color:var(--vrai)}
+.answers.vf .ans.f{border-color:var(--faux);color:var(--faux)}
+.ans.good{background:var(--vrai-soft);border-color:var(--vrai)}
+.ans.bad{background:var(--faux-soft);border-color:var(--faux);opacity:.8}
+.ans[disabled]{cursor:default}
+.reveal{margin-top:1.3rem;padding:1rem 1.2rem;border-radius:14px;background:var(--air-soft);font-size:clamp(1rem,1.8vw,1.3rem);display:none}
+.reveal.show{display:block}
+.reveal strong{font-family:"Bricolage Grotesque",sans-serif}
+.nav-q{display:flex;justify-content:space-between;margin-top:1.4rem;gap:.6rem}
+.hint{color:var(--muted);font-size:.95rem;margin-top:.8rem}
+
+.frise{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1rem}
+.card{perspective:900px;min-height:170px;border:none;background:none;padding:0}
+.card .inner{position:relative;width:100%;height:100%;min-height:170px;transition:transform .5s;transform-style:preserve-3d}
+.card.flipped .inner{transform:rotateY(180deg)}
+.card .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;padding:1rem;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.card .front{background:var(--sun-soft);border:2px solid var(--sun);color:var(--ink);font-size:1.08rem;font-weight:700}
+.card .back{background:var(--air);color:var(--on-color);transform:rotateY(180deg)}
+.card .back b{font-family:"Bricolage Grotesque",sans-serif;font-size:2rem;display:block}
+@media (prefers-reduced-motion: reduce){.card .inner{transition:none}}
+
+.stage.projection{position:fixed;inset:0;z-index:50;border-radius:0;overflow:auto;padding:3vw 5vw;padding-top:calc(3vw + env(safe-area-inset-top,0px))}
+.stage.projection .question{max-width:none}
+
+/* Fiche patients (écran) */
+.print-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0 1.5rem}
+.sheet{background:#fff;color:#16323A;border-radius:6px;box-shadow:0 2px 0 var(--line);padding:2rem;max-width:820px;margin:0 auto 2rem;border:1px solid var(--line)}
+.sheet h2{color:#0F6E78}
+.sheet h3{color:#0F6E78;margin-top:1rem}
+.sheet .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.sheet .pill{display:inline-block;background:#DCEFEC;border-radius:6px;padding:.1rem .5rem;font-weight:700}
+.sheet table{border-collapse:collapse;width:100%;font-size:.95rem}
+.sheet td,.sheet th{border:1px solid #CFE0DD;padding:.35rem .5rem;text-align:left;vertical-align:top}
+.sheet th{background:#F3F8F7}
+.write{border-bottom:1.5px dotted #4D6970;min-height:1.8em;margin:.3rem 0}
+.bignum{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:2.2rem;color:#0F6E78}
+.cartons{display:none}
+
+@media (max-width:760px){
+  .hero{grid-template-columns:1fr}
+  .ring{display:none}
+  .prep ul{columns:1}
+  .seq{grid-template-columns:1fr;gap:.3rem}
+  .cols,.sheet .grid2{grid-template-columns:1fr}
+  .answers.vf{grid-template-columns:1fr 1fr}
+}
+
+/* Impression */
+@media print{
+  @page{size:A4;margin:12mm}
+  :root{padding:0}
+  body{background:#fff;color:#16323A;font-size:10.5pt}
+  body::before,header.top,.no-print,.view:not(#fiche){display:none !important}
+  main{padding:0;max-width:none}
+  #fiche{display:block !important}
+  .sheet{box-shadow:none;border:none;padding:0;max-width:none;margin:0;page-break-after:always}
+  .sheet .grid2{grid-template-columns:1fr 1fr}
+  body.print-cartons .sheet{display:none}
+  body.print-cartons .cartons{display:block}
+  body:not(.print-cartons) .cartons{display:none}
+  .carton{height:130mm;display:flex;align-items:center;justify-content:center;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:90pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .carton.v{background:#2C8C5A;color:#fff}
+  .carton.f{background:#D0513A;color:#fff;transform:rotate(180deg)}
+  .fold{text-align:center;font-size:9pt;padding:2mm 0;border-top:1px dashed #999;border-bottom:1px dashed #999}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand"><span class="leaf" aria-hidden="true">🌿</span>Atelier tabac</div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#deroule">1. Le déroulé</a>
+      <a href="#jeux">2. Les jeux</a>
+      <a href="#fiche">3. Fiche patients</a>
+    </nav>
+    <div class="chrono no-print">
+      <output id="clock" aria-live="off">00:00</output>
+      <button class="btn small" id="clockBtn">Lancer le chrono</button>
+      <button class="btn small" id="clockReset" title="Remettre à zéro">↺</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ============ DÉROULÉ ============ -->
+<section class="view" id="deroule" aria-labelledby="t-deroule">
+  <div class="hero">
+    <div>
+      <h1 id="t-deroule">Comprendre sa dépendance pour mieux s’en libérer</h1>
+      <p>Votre fil conducteur pour 75 minutes d’atelier. Suivez les séquences dans l’ordre : chaque bouton jaune ouvre le jeu correspondant, à projeter au groupe. Le chrono en haut à droite surligne la séquence en cours.</p>
+      <div class="objectifs"><span>La dépendance</span><span>Le sevrage</span><span>Les aides</span></div>
+    </div>
+    <svg class="ring" viewBox="0 0 150 150" role="img" aria-label="Répartition du temps : 10, 20, 18, 20 et 7 minutes">
+      <g transform="rotate(-90 75 75)" fill="none" stroke-width="16"></g>
+      <text x="75" y="72" text-anchor="middle" font-size="30" font-weight="800">75</text>
+      <text x="75" y="94" text-anchor="middle" font-size="13">minutes</text>
+    </svg>
+  </div>
+
+  <div class="prep">
+    <h3>Mode d’emploi : tout se fait depuis cette page</h3>
+    <ul>
+      <li><strong>Avant</strong> : ouvrez ce lien sur l’ordinateur branché au vidéoprojecteur. Imprimez la fiche patients (onglet 3, un seul bouton).</li>
+      <li><strong>Pendant</strong> : cliquez sur « Lancer le chrono », puis suivez les séquences de haut en bas.</li>
+      <li><strong>Les jeux</strong> : cliquez sur un bouton jaune. Le groupe vote à main levée, vous cliquez sur sa réponse, l’explication s’affiche.</li>
+      <li><strong>Pour revenir au déroulé</strong> : cliquez sur « 1. Le déroulé » en haut.</li>
+      <li><strong>Matériel</strong> : des post-it de deux couleurs, des feutres et un tableau.</li>
+      <li><strong>Facultatif</strong> : quelques échantillons de patchs ou de gommes, à faire passer pendant la séquence sur les aides.</li>
+    </ul>
+  </div>
+
+  <ol class="timeline" id="timeline"></ol>
+</section>
+
+<!-- ============ JEUX ============ -->
+<section class="view" id="jeux" aria-labelledby="t-jeux">
+  <h1 id="t-jeux">Les jeux à projeter</h1>
+  <p class="tip">Faites voter le groupe à main levée, demandez à une personne d’expliquer son choix, puis cliquez sur la réponse retenue par le groupe pour afficher la bonne réponse.</p>
+  <div class="game-pick" id="gamePick"></div>
+  <div class="stage" id="stage"></div>
+</section>
+
+<!-- ============ FICHE PATIENTS ============ -->
+<section class="view" id="fiche" aria-labelledby="t-fiche">
+  <div class="no-print">
+    <h1 id="t-fiche">À remettre aux participants</h1>
+    <p class="tip">La fiche tient sur deux pages, à imprimer en recto-verso, une par participant. C’est le seul document papier de l’atelier.</p>
+    <div class="print-actions">
+      <button class="btn solid" id="printFiche">Imprimer la fiche patients</button>
+    </div>
+  </div>
+
+  <article class="sheet">
+    <h2>Arrêter de fumer : l’essentiel à retenir</h2>
+    <p>Fumer n’est pas un manque de volonté. C’est une <strong>dépendance</strong>, et elle se soigne.</p>
+
+    <h3>Les 3 dépendances</h3>
+    <table>
+      <tr><th>Physique</th><td>La nicotine arrive au cerveau en moins de 10 secondes et libère du « plaisir » (dopamine). Le cerveau en redemande : c’est le manque.</td></tr>
+      <tr><th>Psychologique</th><td>La cigarette sert à gérer le stress, l’ennui, les émotions, à se faire plaisir.</td></tr>
+      <tr><th>Comportementale</th><td>Les habitudes : le café, la pause, la voiture, après le repas, avec les amis.</td></tr>
+    </table>
+
+    <div class="grid2">
+      <div>
+        <h3>Une envie dure quelques minutes</h3>
+        <p>Elle monte, puis redescend, même sans fumer. Pour la laisser passer :</p>
+        <ul>
+          <li><strong>Retarder</strong> : « j’attends 5 minutes »</li>
+          <li><strong>Respirer</strong> lentement et profondément</li>
+          <li><strong>Boire</strong> un grand verre d’eau</li>
+          <li><strong>Bouger</strong> ou s’occuper les mains</li>
+        </ul>
+        <p>Le manque est plus fort les premiers jours, puis diminue nettement en 2 à 4 semaines.</p>
+      </div>
+      <div>
+        <h3>Ce que votre corps gagne</h3>
+        <table>
+          <tr><td><strong>20 min</strong></td><td>Tension et pouls redeviennent normaux</td></tr>
+          <tr><td><strong>8 h</strong></td><td>Le monoxyde de carbone dans le sang diminue de moitié</td></tr>
+          <tr><td><strong>48 h</strong></td><td>Le goût et l’odorat s’améliorent</td></tr>
+          <tr><td><strong>72 h</strong></td><td>On respire plus facilement</td></tr>
+          <tr><td><strong>1 à 9 mois</strong></td><td>Moins de toux, plus de souffle</td></tr>
+          <tr><td><strong>1 an</strong></td><td>Risque d’infarctus divisé par deux</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h3>Mon mini-test de dépendance</h3>
+    <div class="grid2">
+      <table>
+        <tr><th colspan="2">Ma 1<sup>re</sup> cigarette, combien de temps après le réveil ?</th></tr>
+        <tr><td>Dans les 5 minutes</td><td>3</td></tr>
+        <tr><td>6 à 30 minutes</td><td>2</td></tr>
+        <tr><td>31 à 60 minutes</td><td>1</td></tr>
+        <tr><td>Plus de 60 minutes</td><td>0</td></tr>
+      </table>
+      <table>
+        <tr><th colspan="2">Combien de cigarettes par jour ?</th></tr>
+        <tr><td>10 ou moins</td><td>0</td></tr>
+        <tr><td>11 à 20</td><td>1</td></tr>
+        <tr><td>21 à 30</td><td>2</td></tr>
+        <tr><td>31 ou plus</td><td>3</td></tr>
+      </table>
+    </div>
+    <p style="margin-top:.6rem">Mon total : <span class="pill">&nbsp;&nbsp;&nbsp;/ 6</span> &nbsp; 0–1 : dépendance faible · 2–4 : moyenne · 5–6 : forte. Parlez-en à un professionnel pour adapter vos substituts.</p>
+  </article>
+
+  <article class="sheet">
+    <h2>Les aides pour arrêter</h2>
+    <div class="grid2">
+      <div>
+        <h3>Les substituts nicotiniques</h3>
+        <p>Patchs, gommes, pastilles, comprimés, spray… Ils apportent la nicotine <strong>sans</strong> la fumée toxique et calment le manque.</p>
+        <ul>
+          <li>Remboursés à <strong>65 % sur ordonnance</strong> (le reste par votre mutuelle)</li>
+          <li>Peuvent les prescrire : médecin, sage-femme, infirmier, kinésithérapeute, chirurgien-dentiste</li>
+          <li>Le plus efficace : <strong>patch + forme orale</strong> pour les envies</li>
+          <li>Encore des envies ? La dose est sans doute trop faible : parlez-en</li>
+        </ul>
+        <h3>D’autres traitements</h3>
+        <p>Certains médicaments sur ordonnance existent. Votre médecin vous dira s’ils vous conviennent.</p>
+      </div>
+      <div>
+        <h3>Être accompagné</h3>
+        <p class="bignum">39 89</p>
+        <p><strong>Tabac Info Service</strong> : des tabacologues vous accompagnent par téléphone, gratuitement. Site et appli : <strong>tabac-info-service.fr</strong></p>
+        <p><strong>Mois sans tabac</strong> : en novembre, un défi collectif de 30 jours. 30 jours sans fumer, c’est 5 fois plus de chances d’arrêter définitivement.</p>
+        <p><strong>Votre maison de santé</strong> : parlez-en à votre médecin, votre infirmier ou votre pharmacien.</p>
+        <div class="write"></div>
+      </div>
+    </div>
+
+    <h3>Mon plan</h3>
+    <div class="grid2">
+      <div><strong>Mes raisons d’arrêter</strong><div class="write"></div><div class="write"></div></div>
+      <div><strong>Mes moments à risque</strong><div class="write"></div><div class="write"></div></div>
+      <div><strong>Ce que je ferai à la place</strong><div class="write"></div><div class="write"></div></div>
+      <div><strong>Qui peut me soutenir</strong><div class="write"></div><div class="write"></div></div>
+    </div>
+    <p style="margin-top:1rem"><strong>Mon premier pas, dès cette semaine :</strong></p>
+    <div class="write"></div>
+  </article>
+
+</section>
+</main>
+
+<script>
+/* ---------- Données : le déroulé ---------- */
+const SEQUENCES = [
+  { start:0, end:10, color:"var(--sun)", titre:"Accueil et brise-glace",
+    objectif:"Créer un climat de confiance et faire émerger ce que la cigarette représente pour chacun.",
+    faire:["Présentez-vous et rappelez les règles : bienveillance, confidentialité, aucun jugement.",
+           "Distribuez deux post-it à chacun : sur l’un, « ce que la cigarette m’apporte » ; sur l’autre, « ce qu’elle me coûte ».",
+           "Collez-les au tableau en deux colonnes et lisez-les à voix haute.",
+           "Annoncez le fonctionnement des jeux : on vote à main levée, il n’y a pas de mauvaise réponse."],
+    dire:"« Si vous fumez, c’est que la cigarette vous apporte quelque chose de réel. Aujourd’hui, on va comprendre pourquoi, et voir comment s’en passer sans souffrir. »",
+    astuce:"Gardez le tableau des post-it : vous y reviendrez en conclusion.",
+    jeux:[] },
+  { start:10, end:30, color:"var(--air)", titre:"Comprendre la dépendance",
+    objectif:"Comprendre les trois dépendances et déculpabiliser.",
+    faire:["Lancez le Vrai/Faux « La dépendance » : il sert de support à vos explications.",
+           "Après chaque réponse, complétez avec les messages clés ci-dessous.",
+           "Reliez les post-it du tableau aux trois dépendances (ex. « ça me détend » : psychologique ; « avec le café » : comportementale)."],
+    cles:["Physique : la nicotine atteint le cerveau en moins de 10 s et libère de la dopamine. Le cerveau s’habitue et réclame sa dose.",
+          "Psychologique : la cigarette devient un outil pour gérer stress, ennui, émotions.",
+          "Comportementale : des gestes et des moments associés (café, pause, voiture).",
+          "Ce n’est pas une question de volonté : c’est une maladie chronique qui se soigne."],
+    dire:"« La cigarette ne vous détend pas : elle calme le manque qu’elle a elle-même créé. »",
+    astuce:"Si le groupe est à l’aise, proposez à chacun de faire le mini-test de dépendance de la fiche patients.",
+    jeux:[{id:"vf-dependance",label:"Vrai/Faux : la dépendance"}] },
+  { start:30, end:48, color:"var(--vrai)", titre:"Les effets du sevrage",
+    objectif:"Savoir à quoi s’attendre, dédramatiser le manque et donner envie avec les bénéfices.",
+    faire:["Demandez au groupe : « Quand vous avez manqué de cigarettes, qu’avez-vous ressenti ? » Notez au tableau.",
+           "Lancez le Vrai/Faux « Le sevrage ».",
+           "Puis la frise des bénéfices : le groupe devine le délai avant de retourner chaque carte.",
+           "Terminez par la « boîte à outils anti-envie » : que faire pendant les quelques minutes d’une envie ? Collectez les idées au tableau."],
+    cles:["Symptômes possibles : envie de fumer, irritabilité, nervosité, troubles du sommeil, difficultés de concentration, faim.",
+          "Ils sont plus forts les premiers jours et diminuent nettement en 2 à 4 semaines.",
+          "Une envie dure quelques minutes : retarder, respirer, boire de l’eau, bouger.",
+          "Le manque se soulage : c’est le rôle des substituts bien dosés."],
+    dire:"« Le manque, c’est le signe que votre corps se répare. Et on n’est pas obligé de le subir. »",
+    astuce:"Si vous manquez de temps, retournez seulement 5 ou 6 cartes de la frise.",
+    jeux:[{id:"vf-sevrage",label:"Vrai/Faux : le sevrage"},{id:"frise",label:"La frise des bénéfices"}] },
+  { start:48, end:68, color:"var(--faux)", titre:"Les aides mobilisables",
+    objectif:"Connaître les aides, savoir comment les obtenir et lever les idées reçues.",
+    faire:["Lancez le quiz « Les aides ».",
+           "Si vous avez des échantillons, faites-les passer : on peut toucher un patch, goûter une pastille.",
+           "Expliquez le parcours : consultation, ordonnance, pharmacie avec la carte Vitale.",
+           "Présentez les ressources de la fiche patients (39 89, Mois sans tabac, maison de santé)."],
+    cles:["Substituts remboursés à 65 % sur ordonnance.",
+          "Patch + forme orale : la combinaison la plus efficace.",
+          "Fumer avec un patch n’est pas dangereux : c’est souvent le signe d’un sous-dosage.",
+          "Être accompagné augmente nettement les chances de réussite."],
+    dire:"« On n’arrête pas seul, et on n’arrête pas forcément du premier coup. Chaque tentative rapproche de l’arrêt. »",
+    astuce:"Répondez aux questions individuelles de traitement en proposant un rendez-vous plutôt qu’en séance.",
+    jeux:[{id:"quiz-aides",label:"Quiz : les aides"}] },
+  { start:68, end:75, color:"var(--muted)", titre:"Conclusion et premier pas",
+    objectif:"Repartir avec une action concrète.",
+    faire:["Distribuez la fiche patients.",
+           "Revenez au tableau des post-it : qu’est-ce qui a changé dans votre regard ?",
+           "Chacun écrit son « premier pas » au dos de la fiche (appeler le 39 89, prendre rendez-vous, choisir une date…).",
+           "Tour de table rapide : un mot pour repartir."],
+    dire:"« Vous n’avez pas besoin d’être prêt à tout arrêter aujourd’hui. Juste de faire un premier pas. »",
+    astuce:"Proposez un rendez-vous individuel à la maison de santé à ceux qui le souhaitent.",
+    jeux:[] }
+];
+
+/* ---------- Données : les jeux ---------- */
+const GAMES = {
+  "vf-dependance": { titre:"Vrai/Faux : la dépendance", type:"quiz", desc:"8 affirmations", questions:[
+    {q:"La nicotine atteint le cerveau en moins de 10 secondes.", vf:true,
+     e:"C’est pour cela que la cigarette soulage si vite… et qu’elle rend si dépendant. Le cerveau associe très vite le geste au soulagement."},
+    {q:"Fumer détend et réduit le stress.", vf:false,
+     e:"La cigarette calme le manque qu’elle a elle-même créé. Après quelques semaines sans tabac, les anciens fumeurs se sentent en général moins stressés."},
+    {q:"On peut être dépendant même en fumant peu.", vf:true,
+     e:"La dépendance se mesure surtout au besoin : par exemple, fumer très vite après le réveil est un signe fort."},
+    {q:"Les cigarettes « légères » et le tabac à rouler sont moins dangereux.", vf:false,
+     e:"On compense sans s’en rendre compte en inhalant plus fort. Le tabac à rouler est au moins aussi toxique."},
+    {q:"La dépendance au tabac, c’est seulement une question de volonté.", vf:false,
+     e:"C’est une maladie chronique qui modifie le fonctionnement du cerveau. La volonté compte, mais les aides augmentent beaucoup les chances."},
+    {q:"Le café, la pause ou la voiture peuvent déclencher l’envie de fumer.", vf:true,
+     e:"C’est la dépendance comportementale : le cerveau associe ces moments à la cigarette. On peut changer ces habitudes."},
+    {q:"C’est la nicotine qui provoque les cancers.", vf:false,
+     e:"La nicotine rend dépendant. Ce sont les goudrons, le monoxyde de carbone et les milliers de substances de la fumée qui rendent malade. D’où l’intérêt des substituts."},
+    {q:"Réduire sa consommation peut être une étape vers l’arrêt.", vf:true,
+     e:"Oui, à condition de garder l’arrêt comme objectif. Les substituts peuvent aider à réduire."}
+  ]},
+  "vf-sevrage": { titre:"Vrai/Faux : le sevrage", type:"quiz", desc:"5 affirmations", questions:[
+    {q:"Une envie de fumer dure plusieurs heures si on ne fume pas.", vf:false,
+     e:"Une envie dure quelques minutes, puis redescend. Il suffit de tenir ce court moment : retarder, respirer, boire de l’eau, bouger."},
+    {q:"Être irritable ou mal dormir les premiers jours, c’est normal.", vf:true,
+     e:"Ce sont des signes de manque fréquents. Ils sont plus forts les premiers jours et diminuent nettement en 2 à 4 semaines."},
+    {q:"Les symptômes du manque durent toute la vie.", vf:false,
+     e:"Le manque physique s’estompe en quelques semaines. Des envies ponctuelles peuvent revenir plus tard, liées à des situations : on apprend à les reconnaître."},
+    {q:"Quand on arrête de fumer, on prend forcément beaucoup de poids.", vf:false,
+     e:"Ce n’est pas systématique. Une prise de poids modérée est possible ; les substituts, l’activité physique et une alimentation équilibrée la limitent."},
+    {q:"Le manque peut être soulagé par des traitements.", vf:true,
+     e:"Les substituts nicotiniques bien dosés soulagent le manque. Si les envies restent fortes, c’est souvent que la dose est trop faible."}
+  ]},
+  "frise": { titre:"La frise des bénéfices", type:"frise", desc:"10 cartes à retourner", cartes:[
+    {t:"20 minutes", b:"La tension et le rythme cardiaque redeviennent normaux."},
+    {t:"8 heures", b:"Le monoxyde de carbone dans le sang diminue de moitié. Les cellules sont mieux oxygénées."},
+    {t:"24 heures", b:"Les poumons commencent à éliminer le mucus et les résidus de fumée."},
+    {t:"48 heures", b:"Le goût et l’odorat s’améliorent."},
+    {t:"72 heures", b:"On respire plus facilement, on a plus d’énergie."},
+    {t:"2 semaines à 3 mois", b:"La toux et la fatigue diminuent, le souffle revient."},
+    {t:"1 à 9 mois", b:"Les cils des bronches repoussent : on tousse moins, on a moins d’infections."},
+    {t:"1 an", b:"Le risque d’infarctus est divisé par deux."},
+    {t:"5 ans", b:"Le risque de cancer du poumon est presque divisé par deux."},
+    {t:"10 à 15 ans", b:"L’espérance de vie redevient proche de celle d’une personne qui n’a jamais fumé."}
+  ]},
+  "quiz-aides": { titre:"Quiz : les aides", type:"quiz", desc:"7 questions", questions:[
+    {q:"Les substituts nicotiniques sont remboursés par l’Assurance maladie…", opts:["Pas du tout","À 65 % sur ordonnance","Seulement 150 € par an"], ok:1,
+     e:"Depuis 2019, ils sont remboursés à 65 % sur ordonnance, comme un médicament. La mutuelle prend en charge le reste."},
+    {q:"Qui peut prescrire des substituts nicotiniques ?", opts:["Seulement le médecin traitant","Médecin, sage-femme, infirmier, kiné, chirurgien-dentiste","Seulement un tabacologue"], ok:1,
+     e:"De nombreux professionnels peuvent les prescrire, y compris le médecin du travail. Le pharmacien peut vous conseiller sur leur utilisation."},
+    {q:"Peut-on associer un patch et des gommes ou pastilles ?", opts:["Oui, c’est même recommandé","Non, c’est dangereux"], ok:0,
+     e:"Le patch apporte une dose de fond toute la journée ; la forme orale répond aux envies ponctuelles. C’est la combinaison la plus efficace."},
+    {q:"Je fume une cigarette alors que j’ai un patch. C’est…", opts:["Très dangereux pour le cœur","Pas dangereux : souvent le signe d’une dose trop faible"], ok:1,
+     e:"Ce n’est pas dangereux. Si l’envie de fumer persiste avec le patch, il faut probablement augmenter la dose : parlez-en à un professionnel."},
+    {q:"Le numéro de Tabac Info Service est le…", opts:["15","39 89","3919"], ok:1,
+     e:"Au 39 89, des tabacologues accompagnent gratuitement, avec des rappels réguliers. Il existe aussi un site et une appli : tabac-info-service.fr"},
+    {q:"Avec des substituts et un accompagnement, mes chances d’arrêter…", opts:["Ne changent pas","Augmentent nettement"], ok:1,
+     e:"Selon l’Assurance maladie, les substituts augmentent de 50 à 70 % les chances d’arrêter définitivement. Un accompagnement les augmente encore."},
+    {q:"La cigarette électronique…", opts:["Est plus dangereuse que le tabac","Peut aider certains fumeurs, à condition d’arrêter complètement le tabac","Est remboursée"], ok:1,
+     e:"Elle est bien moins nocive que la cigarette et peut aider à arrêter. Mais garder quelques cigarettes en plus conserve l’essentiel des risques : l’objectif reste zéro tabac. N’est pas remboursée."}
+  ]}
+};
+
+/* ---------- Routage simple par #ancre ---------- */
+const VIEWS = ["deroule","jeux","fiche"];
+let currentGame = "vf-dependance";
+function route(){
+  let h = (location.hash||"").slice(1);
+  let view = "deroule";
+  if (VIEWS.includes(h)) view = h;
+  else if (GAMES[h]) { view = "jeux"; currentGame = h; }
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id===view));
+  document.querySelectorAll("nav.tabs a").forEach(a=>{
+    if (a.getAttribute("href")==="#"+view) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
+  });
+  if (view==="jeux") renderGame();
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- Déroulé ---------- */
+function renderTimeline(){
+  const ol = document.getElementById("timeline");
+  ol.innerHTML = SEQUENCES.map((s,i)=>`
+    <li class="seq" data-i="${i}">
+      <div class="when">${s.start}–${s.end}<small>${s.end-s.start} min</small></div>
+      <div class="body">
+        <h2>${s.titre}</h2>
+        <p><strong>Objectif :</strong> ${s.objectif}</p>
+        <div class="cols">
+          <div class="box"><h4>Ce que vous faites</h4><ul>${s.faire.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+          ${s.cles?`<div class="box"><h4>Messages clés</h4><ul>${s.cles.map(x=>`<li>${x}</li>`).join("")}</ul></div>`:""}
+        </div>
+        <p class="say">${s.dire}</p>
+        <p class="tip">💡 ${s.astuce}</p>
+        ${s.jeux.length?`<div class="launch">${s.jeux.map(j=>`<a class="btn sun" href="#${j.id}">▶ Lancer : ${j.label}</a>`).join("")}</div>`:""}
+      </div>
+    </li>`).join("");
+  // anneau de répartition du temps
+  const g = document.querySelector(".ring g");
+  const r = 60, C = 2*Math.PI*r;
+  g.innerHTML = SEQUENCES.map(s=>{
+    const len = (s.end-s.start)/75*C, off = -(s.start/75*C);
+    return `<circle cx="75" cy="75" r="${r}" stroke="${s.color}" stroke-dasharray="${len-2} ${C}" stroke-dashoffset="${off}"/>`;
+  }).join("");
+}
+
+/* ---------- Jeux ---------- */
+let qIndex = 0, answered = {};
+function renderGamePick(){
+  document.getElementById("gamePick").innerHTML = Object.entries(GAMES).map(([id,g])=>
+    `<a href="#${id}" ${id===currentGame?'aria-current="true"':''}><strong>${g.titre}</strong><span>${g.desc}</span></a>`).join("");
+}
+let lastGame = null;
+function renderGame(){
+  if (lastGame!==currentGame){ qIndex=0; answered={}; lastGame=currentGame; }
+  renderGamePick();
+  const g = GAMES[currentGame];
+  const stage = document.getElementById("stage");
+  const bar = `<div class="stage-bar">
+      <h2 style="margin:0">${g.titre}</h2>
+      <button class="btn small" id="projBtn">${stage.classList.contains("projection")?"Quitter le plein écran":"Plein écran"}</button>
+    </div>`;
+  if (g.type==="frise"){
+    stage.innerHTML = bar + `<p class="hint">Lisez le bénéfice, laissez le groupe deviner le délai, puis cliquez pour retourner la carte.</p>
+      <div class="frise">${g.cartes.map((c,i)=>`
+        <button class="card" aria-label="Retourner la carte ${i+1}">
+          <div class="inner">
+            <div class="face front">${c.b}</div>
+            <div class="face back"><span>Au bout de</span><b>${c.t}</b></div>
+          </div>
+        </button>`).join("")}</div>
+      <div class="nav-q"><button class="btn" id="flipAll">Tout retourner</button><button class="btn" id="resetFrise">Recommencer</button></div>`;
+    stage.querySelectorAll(".card").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("flipped")));
+    stage.querySelector("#flipAll").onclick=()=>stage.querySelectorAll(".card").forEach(c=>c.classList.add("flipped"));
+    stage.querySelector("#resetFrise").onclick=()=>stage.querySelectorAll(".card").forEach(c=>c.classList.remove("flipped"));
+  } else {
+    const qs = g.questions, q = qs[qIndex];
+    const isVF = typeof q.vf === "boolean";
+    const opts = isVF ? ["VRAI","FAUX"] : q.opts;
+    const okIdx = isVF ? (q.vf?0:1) : q.ok;
+    const chosen = answered[qIndex];
+    const dots = qs.map((_,i)=>`<i class="${i===qIndex?'cur':(answered[i]!==undefined?'done':'')}"></i>`).join("");
+    stage.innerHTML = bar + `
+      <div class="dots" aria-label="Question ${qIndex+1} sur ${qs.length}">${dots}</div>
+      <p class="question">${q.q}</p>
+      <div class="answers ${isVF?'vf':''}">
+        ${opts.map((o,i)=>{
+          let cls = isVF ? (i===0?'v':'f') : '';
+          if (chosen!==undefined){ if(i===okIdx) cls+=' good'; else if(i===chosen) cls+=' bad'; }
+          return `<button class="ans ${cls}" data-i="${i}" ${chosen!==undefined?'disabled':''}>${isVF?o:String.fromCharCode(65+i)+'. '+o}</button>`;
+        }).join("")}
+      </div>
+      <div class="reveal ${chosen!==undefined?'show':''}">
+        <strong>${chosen===undefined?'':(chosen===okIdx?'Bien vu ! ':'Eh non ! ')}La réponse : ${opts[okIdx]}.</strong><br>${q.e}
+      </div>
+      ${chosen===undefined?`<p class="hint">Cliquez sur la réponse choisie par le groupe, ou <button class="btn small" id="showAns">montrer la réponse</button></p>`:''}
+      <div class="nav-q">
+        <button class="btn" id="prevQ" ${qIndex===0?'disabled':''}>← Précédente</button>
+        ${qIndex<qs.length-1?`<button class="btn solid" id="nextQ">Question suivante</button>`:`<span class="hint" style="margin:0">Dernière question 🎉</span>`}
+      </div>`;
+    stage.querySelectorAll(".ans").forEach(b=>b.addEventListener("click",()=>{ answered[qIndex]=+b.dataset.i; renderGame(); }));
+    const sa = stage.querySelector("#showAns"); if (sa) sa.onclick=()=>{ answered[qIndex]=okIdx; renderGame(); };
+    const p = stage.querySelector("#prevQ"); if (p) p.onclick=()=>{ qIndex--; renderGame(); };
+    const n = stage.querySelector("#nextQ"); if (n) n.onclick=()=>{ qIndex++; renderGame(); };
+  }
+  stage.querySelector("#projBtn").onclick = toggleProjection;
+}
+function toggleProjection(){
+  const stage = document.getElementById("stage");
+  const on = !stage.classList.contains("projection");
+  stage.classList.toggle("projection", on);
+  try {
+    if (on && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+    if (!on && document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  } catch(e){}
+  renderGame();
+}
+document.addEventListener("fullscreenchange",()=>{
+  const stage=document.getElementById("stage");
+  if(!document.fullscreenElement && stage.classList.contains("projection")){ stage.classList.remove("projection"); renderGame(); }
+});
+document.addEventListener("keydown",e=>{
+  const g = GAMES[currentGame];
+  if (!document.getElementById("jeux").classList.contains("active") || g.type!=="quiz") return;
+  if (e.key==="ArrowRight" && qIndex<g.questions.length-1){ qIndex++; renderGame(); }
+  if (e.key==="ArrowLeft" && qIndex>0){ qIndex--; renderGame(); }
+  if (e.key==="Escape" && document.getElementById("stage").classList.contains("projection")) toggleProjection();
+});
+
+/* ---------- Chrono ---------- */
+let t0=null, elapsed=0, timer=null;
+function tick(){
+  const ms = elapsed + (t0?Date.now()-t0:0);
+  const m = Math.floor(ms/60000), s = Math.floor(ms/1000)%60;
+  document.getElementById("clock").textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  document.querySelectorAll(".seq").forEach(li=>{
+    const sq = SEQUENCES[+li.dataset.i];
+    li.classList.toggle("now", (t0||elapsed>0) && m>=sq.start && m<sq.end);
+  });
+}
+document.getElementById("clockBtn").onclick = function(){
+  if (t0){ elapsed += Date.now()-t0; t0=null; clearInterval(timer); this.textContent="Reprendre"; }
+  else { t0=Date.now(); timer=setInterval(tick,1000); this.textContent="Pause"; }
+  tick();
+};
+document.getElementById("clockReset").onclick = function(){
+  t0=null; elapsed=0; clearInterval(timer); document.getElementById("clockBtn").textContent="Lancer le chrono"; tick();
+};
+
+/* ---------- Impression ---------- */
+document.getElementById("printFiche").onclick=()=>{ window.print(); };
+
+renderTimeline();
+route();
+</script>
+</body>
+</html>
